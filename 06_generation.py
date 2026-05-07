@@ -133,8 +133,38 @@ def rerank(query, candidates, top_k : int =3):
 
     scored.sort(key=lambda x:x['ce_score'], reverse = True)
     return scored[:top_k]
+# ── 7.Sanitizer_ chunks ───────────────────────────────────────────────────────────
+def sanitize_chunks(chunks: list[dict]) -> list[dict]:
+    """
+    Strip injection patterns from chunks before passing to the LLM.
+    Called in generate() before build_prompt().
+    
+    Design decision — why sanitize here and not at ingestion time:
+      Ingestion happens once. Sanitization at generation time catches
+      injections that were already in your corpus before you added this.
+      Defense in depth: sanitize at both points in production.
+    """
+    import re
+    patterns = [
+    r"ignore\s+(all\s+)?previous\s+instructions?",
+    r"you\s+must\s+respond\s+with",
+    r"mandatory\s+system\s+override",
+    r"disregard\s+(all\s+)?prior",
+    r"do\s+not\s+follow",
+    r"ignore\s+all\s+previous",          # ← add this
+    r"respond\s+with\s+only\s+the\s+word",  # ← add this
 
-# ── 7. Prompt builder ───────────────────────────────────────────────────────────
+    ]
+    cleaned = []
+    for chunk in chunks:
+        text = chunk["text"]
+        for pattern in patterns:
+            text = re.sub(pattern, "[removed]", text, flags=re.IGNORECASE)
+        cleaned.append({**chunk, "text": text})
+    return cleaned
+
+
+# ── 8. Prompt builder ───────────────────────────────────────────────────────────
 
  
 def build_prompt(query: str, chunks: list[dict]) -> str:
@@ -169,7 +199,7 @@ def build_prompt(query: str, chunks: list[dict]) -> str:
 
     return prompt
 
-# ── 8. Generation ───────────────────────────────────────────────────────────────
+# ── 9. Generation ───────────────────────────────────────────────────────────────
 
 def generate(query, chunks):
     """
@@ -185,13 +215,11 @@ def generate(query, chunks):
     - Temperature 0 = deterministic, factual, grounded in context.
     - If you were writing a story, you'd use 0.7-0.9.
     """
-
+    chunks = sanitize_chunks(chunks)
     prompt = build_prompt(query, chunks)
 
-    GENERATION_MODEL = "llama-3.3-70b-versatile"
-
     response = groq_client.chat.completions.create(
-    model = GENERATION_MODEL,
+    model = "llama-3.3-70b-versatile",
     messages= [
         {
             "role": "system",
@@ -212,7 +240,7 @@ def generate(query, chunks):
 
     return response.choices[0].message.content.strip()
 
-# ── 9. Full RAG pipeline ────────────────────────────────────────────────────────
+# ── 10. Full RAG pipeline ────────────────────────────────────────────────────────
 
 def rag(query, top_k : int =3):
     """
@@ -238,7 +266,7 @@ def rag(query, top_k : int =3):
         "sources" : [c['text'] for c in chunks]
     }
 
-# ── 10. Demo ────────────────────────────────────────────────────────────────────
+# ── 11. Demo ────────────────────────────────────────────────────────────────────
  
 if __name__ == "__main__":
     queries = [

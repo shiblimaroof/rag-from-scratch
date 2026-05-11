@@ -1,21 +1,14 @@
 import gradio as gr
-import requests
-
-API_URL = "http://localhost:8000/query"
+import os
+from generation import rag
 
 def ask(question):
     if not question.strip():
         return "Please enter a question.", ""
-    
-    response = requests.post(API_URL, json={"question": question})
-    
-    if response.status_code != 200:
-        return f"API error: {response.status_code}", ""
-    
-    data = response.json()
-    answer = data["answer"]
+    result = rag(question)
+    answer = result["answer"]
     sources = "\n\n".join(
-        f"[{i+1}] {src}" for i, src in enumerate(data["sources"])
+        f"[{i+1}] {src}" for i, src in enumerate(result["sources"])
     )
     return answer, sources
 

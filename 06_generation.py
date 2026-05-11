@@ -42,8 +42,8 @@ if not CHUNKS_FILE.exists():
             "enriched": "Context: Chapter on GPT architecture. GPT uses causal language modeling, predicting the next token autoregressively.",
         },
         {
-            "original": "Attention is computed as softmax(QK^T / sqrt(d_k)) * V.",
-            "enriched": "Context: Chapter on attention math. Attention is computed as softmax(QK^T / sqrt(d_k)) * V.",
+             "original": "Scaled dot-product attention works by computing compatibility between a query and a set of keys, then using those scores to weight the values. The query Q and keys K are multiplied: QK^T gives a matrix of raw scores. These are scaled by sqrt(d_k) — the square root of the key dimension — to prevent dot products from growing large in high dimensions, which would push softmax into regions with near-zero gradients. Softmax converts scores into a probability distribution summing to 1. That distribution is multiplied by values V to produce the final output: Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) * V.",
+             "enriched": "Context: Chapter on attention math. Scaled dot-product attention works by computing compatibility between a query and a set of keys, then using those scores to weight the values. The query Q and keys K are multiplied: QK^T gives a matrix of raw scores. These are scaled by sqrt(d_k) to prevent vanishing gradients. Softmax converts scores into a probability distribution. That distribution weights the values V: Attention(Q,K,V) = softmax(QK^T / sqrt(d_k)) * V.",
         },
         {
             "original": "LoRA fine-tunes large models by injecting low-rank matrices into attention layers.",
@@ -289,6 +289,7 @@ if __name__ == "__main__":
             print(f"  [{i}] {src}")
  
     print("\n[done]")
+
 
  
 
